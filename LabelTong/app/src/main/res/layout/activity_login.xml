@@ -6,13 +6,86 @@
     android:layout_height="match_parent"
     tools:context=".LoginActivity">
 
-    <TextView
+    <ImageView
+        android:id="@+id/loginImage"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="286dp"
+        android:layout_marginBottom="8dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/labeltong"
+        app:layout_constraintBottom_toTopOf="@+id/loginTextLayout"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.155" />
+
+    <TableLayout
+        android:id="@+id/loginTextLayout"
+        android:layout_width="319dp"
+        android:layout_height="101dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/border"
+        android:stretchColumns="1"
+        app:layout_constraintBottom_toTopOf="@+id/loginButtonLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/loginidtext"
+                android:gravity="center"
+                android:text="@string/loginid"
+                android:textSize="24sp" />
+
+            <EditText android:id="@+id/loginid" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/loginpwtext"
+                android:gravity="center"
+                android:text="@string/loginpw"
+                android:textSize="24sp" />
+
+            <EditText android:id="@+id/loginpw" />
+        </TableRow>
+
+    </TableLayout>
+
+    <TableRow
+        android:id="@+id/loginButtonLayout"
+        android:layout_width="320dp"
+        android:layout_height="61dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <Button
+            android:id="@+id/loginButton"
+            android:layout_width="160dp"
+            android:layout_height="match_parent"
+            android:layout_column="0"
+            android:text="@string/login" />
+        <Button
+            android:layout_width="160dp"
+            android:layout_column="1"
+            android:layout_height="match_parent"
+            android:id="@+id/newAccountButton"
+            android:text="@string/newaccount"/>
+    </TableRow>
 
 </android.support.constraint.ConstraintLayout>

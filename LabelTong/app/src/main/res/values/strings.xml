@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">LabelTong</string>
+    <string name="loginid">ID</string>
+    <string name="loginpw">PW</string>
+    <string name="login">Login</string>
+    <string name="newaccount">New Account</string>
+    <string name="title_activity_user_info">UserInfoActivity</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
 </resources>
