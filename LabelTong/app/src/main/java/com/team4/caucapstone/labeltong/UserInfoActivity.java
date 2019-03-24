@@ -1,5 +1,6 @@
 package com.team4.caucapstone.labeltong;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -16,15 +17,22 @@ public class UserInfoActivity extends AppCompatActivity {
 
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            Intent intent;
             switch (item.getItemId()) {
                 case R.id.navigation_home:
                     mTextMessage.setText(R.string.title_home);
                     return true;
                 case R.id.navigation_dashboard:
                     mTextMessage.setText(R.string.title_dashboard);
+                    intent = new Intent(UserInfoActivity.this, BoardActivity.class);
+                    startActivity(intent);
+                    finish();
                     return true;
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
+                    intent = new Intent(UserInfoActivity.this, SettingsActivity.class);
+                    startActivity(intent);
+                    finish();
                     return true;
             }
             return false;
