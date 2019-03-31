@@ -14,7 +14,7 @@ import android.widget.TextView;
 public class BoardActivity extends AppCompatActivity {
     FragmentManager manager = getSupportFragmentManager();
     final Fragment boardFragment = new BoardFragment();
-    final Fragment settingFragment = new SettingFragment();
+    //final Fragment settingFragment = new SettingFragment();
     FragmentTransaction transaction;
     Fragment active = boardFragment;
 
@@ -31,9 +31,11 @@ public class BoardActivity extends AppCompatActivity {
                     active = boardFragment;
                     return true;
                 case R.id.navigation_settings:
-                    if (active == settingFragment) return true;
-                    transaction.hide(active).show(settingFragment).commit();
-                    active = settingFragment;
+                    //if (active == settingFragment) return true;
+                    //transaction.hide(active).show(settingFragment).commit();
+                    //active = settingFragment;
+                    Intent intent = new Intent(BoardActivity.this, SettingFragment.class);
+                    startActivity(intent);
                     return true;
             }
             return false;
@@ -46,7 +48,7 @@ public class BoardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_board);
 
         transaction = manager.beginTransaction();
-        transaction.add(R.id.frameLayout, settingFragment).hide(settingFragment);
+        //transaction.add(R.id.frameLayout, settingFragment).hide(settingFragment);
         transaction.add(R.id.frameLayout, boardFragment).commit();
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
