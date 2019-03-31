@@ -7,7 +7,6 @@
     tools:context=".LoginActivity">
 
     <ImageView
-        android:id="@+id/loginImage"
         android:layout_width="wrap_content"
         android:layout_height="286dp"
         android:layout_marginBottom="8dp"
@@ -40,12 +39,11 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/loginidtext"
                 android:gravity="center"
                 android:text="@string/loginid"
                 android:textSize="24sp" />
 
-            <EditText android:id="@+id/loginid" />
+            <EditText />
         </TableRow>
 
         <TableRow
@@ -53,12 +51,11 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/loginpwtext"
                 android:gravity="center"
                 android:text="@string/loginpw"
                 android:textSize="24sp" />
 
-            <EditText android:id="@+id/loginpw" />
+            <EditText />
         </TableRow>
 
     </TableLayout>
@@ -84,7 +81,6 @@
             android:layout_width="160dp"
             android:layout_column="1"
             android:layout_height="match_parent"
-            android:id="@+id/newAccountButton"
             android:text="@string/newaccount"/>
     </TableRow>
 

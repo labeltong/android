@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/method_title"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+    <HorizontalScrollView
+        android:id="@+id/methodBoard"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/methodLinear"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="140dp"
+                android:layout_height="150dp"
+                android:layout_marginEnd="10dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/button_bg">
+                <ImageButton
+                    android:id="@+id/boundingBox"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@drawable/boundingbox" />
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/method_boundbox"
+                    android:textAlignment="center" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="140dp"
+                android:layout_height="150dp"
+                android:layout_marginEnd="10dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/button_bg">
+                <ImageButton
+                    android:id="@+id/classification"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@drawable/classification" />
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/method_classsification"
+                    android:textAlignment="center" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="140dp"
+                android:layout_height="150dp"
+                android:layout_marginEnd="10dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/button_bg">
+                <ImageButton
+                    android:id="@+id/sentiment"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@drawable/sentiment" />
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/method_sentiment"
+                    android:textAlignment="center" />
+            </LinearLayout>
+
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/topic_title"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <ScrollView
+        android:id="@+id/topicScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+        <LinearLayout
+            android:id="@+id/topicTable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="vertical"
+            android:weightSum="2">
+            <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:weightSum="2" >
+                <LinearLayout
+                    android:layout_width="140dp"
+                    android:layout_height="150dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/button_bg">
+                    <ImageButton
+                        android:id="@+id/car"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/car" />
+                    <TextView
+                        android:layout_width="130dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/topic_car"
+                        android:textAlignment="center" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="140dp"
+                    android:layout_height="150dp"
+                    android:layout_marginEnd="10dp"
+                    android:orientation="vertical"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:background="@drawable/button_bg">
+                    <ImageButton
+                        android:id="@+id/roadsign"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/roadsign" />
+                    <TextView
+                        android:layout_width="130dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/topic_road"
+                        android:textAlignment="center" />
+                </LinearLayout>
+
+            </LinearLayout>
+            <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+                android:weightSum="2" >
+                <LinearLayout
+                    android:layout_width="140dp"
+                    android:layout_height="150dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/button_bg">
+                    <ImageButton
+                        android:id="@+id/cat"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/cat" />
+                    <TextView
+                        android:layout_width="130dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/topic_cat"
+                        android:textAlignment="center" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="140dp"
+                    android:layout_height="150dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/button_bg">
+                    <ImageButton
+                        android:id="@+id/emotion"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/emotion" />
+                    <TextView
+                        android:layout_width="130dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/topic_emotion"
+                        android:textAlignment="center" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
