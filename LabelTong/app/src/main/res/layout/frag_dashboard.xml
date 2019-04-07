@@ -33,6 +33,7 @@
                     android:id="@+id/boundingBox"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
+                    android:onClick="buttonClicked"
                     android:src="@drawable/boundingbox" />
                 <TextView
                     android:layout_width="130dp"
@@ -53,6 +54,7 @@
                     android:id="@+id/classification"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
+                    android:onClick="buttonClicked"
                     android:src="@drawable/classification" />
                 <TextView
                     android:layout_width="130dp"
@@ -72,6 +74,7 @@
                     android:id="@+id/sentiment"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
+                    android:onClick="buttonClicked"
                     android:src="@drawable/sentiment" />
                 <TextView
                     android:layout_width="130dp"
@@ -123,6 +126,7 @@
                         android:id="@+id/car"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
+                        android:onClick="buttonClicked"
                         android:src="@drawable/car" />
                     <TextView
                         android:layout_width="130dp"
@@ -144,6 +148,7 @@
                         android:id="@+id/roadsign"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
+                        android:onClick="buttonClicked"
                         android:src="@drawable/roadsign" />
                     <TextView
                         android:layout_width="130dp"
@@ -173,6 +178,7 @@
                         android:id="@+id/cat"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
+                        android:onClick="buttonClicked"
                         android:src="@drawable/cat" />
                     <TextView
                         android:layout_width="130dp"
@@ -194,6 +200,7 @@
                         android:id="@+id/emotion"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
+                        android:onClick="buttonClicked"
                         android:src="@drawable/emotion" />
                     <TextView
                         android:layout_width="130dp"

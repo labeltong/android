@@ -21,4 +21,7 @@
     <string name="topic_car">Car</string>
 
     <string name="pref_user">User Info</string>
+
+    <string name="label_img">Image Label</string>
+    <string name="label_btn">Submit</string>
 </resources>
