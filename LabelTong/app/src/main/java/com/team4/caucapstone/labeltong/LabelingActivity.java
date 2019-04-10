@@ -85,12 +85,12 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
 
         dumpEvent(event);
         // Handle touch events here...
-
+        // ToDo : Test getRawW,Y Functions Working Properly
         switch (event.getAction() & MotionEvent.ACTION_MASK)
         {
             case MotionEvent.ACTION_DOWN:   // first finger down only
                 savedMatrix.set(matrix);
-                start.set(event.getX(), event.getY());
+                start.set(event.getRawX(), event.getRawY());
                 Log.d(TAG, "mode=DRAG"); // write to LogCat
                 mode = DRAG;
                 break;
@@ -103,7 +103,7 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
                 else if (boxCount == 0) {
                     boxCount++;
                 }
-                else if ((event.getX() - start.x) == 0 && (event.getY() - start.y) == 0) {
+                else if ((event.getRawX() - start.x) == 0 && (event.getRawY() - start.y) == 0) {
                     boxArea[boxCount - 1][0] = (int) start.x;
                     boxArea[boxCount - 1][1] = (int) start.y;
                     Log.d(TAG, boxCount + " : X/Y -> " + start.x + "/" + start.y);
@@ -130,7 +130,8 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
 
                 if (mode == DRAG) {
                     matrix.set(savedMatrix);
-                    matrix.postTranslate(event.getX() - start.x, event.getY() - start.y); // create the transformation in the matrix  of points
+                    matrix.postTranslate(event.getRawX() - start.x,
+                            event.getRawY() - start.y); // create the transformation in the matrix  of points
                 }
                 else if (mode == ZOOM) {
                     // pinch zooming
@@ -160,10 +161,17 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
         paint.setStrokeWidth(10);
-        paint.setColor(Color.BLACK);
-        for (int i = 0; i < 4; i++) {
-            canvas.drawCircle(position[i][0], position[i][1], 70, paint);
+        // ToDo: By Id number, change color
+        int selectedRadioButtonId = radioGroup.getCheckedRadioButtonId();
+        if (selectedRadioButtonId == -1) {
+            Log.d("TEST", "NOTHING");
         }
+        else{
+            RadioButton selectedRadioButton = (RadioButton) findViewById(selectedRadioButtonId);
+            String selectedRadioButtonText = selectedRadioButton.getText().toString().substring(2);
+            Log.d("radioButtonID", selectedRadioButtonText);
+        }
+        paint.setColor(Color.BLACK);
         return bitmap;
     }
 
