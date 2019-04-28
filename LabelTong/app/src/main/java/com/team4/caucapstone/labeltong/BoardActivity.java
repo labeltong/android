@@ -12,7 +12,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
-import java.util.ArrayList;
 
 public class BoardActivity extends AppCompatActivity{
     FragmentManager manager = getSupportFragmentManager();

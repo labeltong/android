@@ -29,4 +29,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     implementation 'com.github.MikeOrtiz:TouchImageView:1.4.0'
+    implementation 'gun0912.ted:tedpermission:2.2.2'
 }

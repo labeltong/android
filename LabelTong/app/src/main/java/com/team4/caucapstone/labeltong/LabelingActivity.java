@@ -1,264 +1,298 @@
 package com.team4.caucapstone.labeltong;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Point;
-import android.graphics.PointF;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import android.graphics.drawable.ColorDrawable;
+import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkRequest;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatDialog;
+import android.util.Base64;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import com.ortiz.touchview.TouchImageView;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+
 import static com.team4.caucapstone.labeltong.BoardActivity.*;
 
 public class LabelingActivity extends AppCompatActivity implements View.OnTouchListener {
-    ImageView imgView;
+    AppCompatDialog progressDialog;
+    TouchImageView imgView;
     TextView headerText;
     TextView questionText;
     RadioGroup radioGroup;
     Bitmap baseBitmap;
     Button submitBtn;
+    Canvas canvas;
+    MediaPlayer mediaPlayer;
+    String imgBase64;
 
-    int[][] boxArea;
-    int boxCount = 0;
-    int method_state;
+    int demo = 0;
 
-    private static final String TAG = "Touch";
-    @SuppressWarnings("unused")
-    private static final float MIN_ZOOM = 1f,MAX_ZOOM = 1f;
+    static int method_state = METHOD_BOUNDING;
+    static boolean isPlaying = false;
+    static boolean network_state = true;
 
-    // These matrices will be used to scale points of the image
-    Matrix matrix = new Matrix();
-    Matrix savedMatrix = new Matrix();
+    ArrayList<String> choice;
+    ArrayList<Pos> points;
 
-    // The 4 states (events) which the user is trying to perform
-    static final int NONE = 0;
-    static final int DRAG = 1;
-    static final int ZOOM = 2;
-    static final int TOUCH = 3;
-    int mode = NONE;
+    //Get SoundFile From Server
+    private void requestNewSong(){
+        mediaPlayer = MediaPlayer.create(this, R.raw.sentimentsample);
+        imgView.setImageResource(R.drawable.play);
+        isPlaying = false;
+    }
 
-    // these PointF objects are used to record the point(s) the user is touching
-    PointF start = new PointF();
-    PointF mid = new PointF();
-    float oldDist = 1f;
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        TouchImageView view = (TouchImageView) v;
+        view.setScaleType(TouchImageView.ScaleType.MATRIX);
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_UP:
+                switch (method_state){
+                    case METHOD_BOUNDING:
+                        Pos pos = new Pos(event.getX(), event.getY());
+                        points.add(pos);
+                        drawCircle(pos);
+                        imgView.invalidate();
+                        break;
+                    case METHOD_SENTIMENT:
+                        if (isPlaying){
+                            imgView.setImageResource(R.drawable.play);
+                            mediaPlayer.stop();
+                            isPlaying = false;
+                        }
+                        else{
+                            isPlaying = true;
+                            mediaPlayer.start();
+                            imgView.setImageResource(R.drawable.stop);
+                        }
+                        break;
+                }
 
+                break;
+        }
+        return true;
+    }
+
+    private void drawCircle(Pos pos){
+        Paint paint = new Paint();
+        paint.setColor(Color.BLACK);
+        paint.setStrokeWidth(5f);
+        float x = 0;
+        float y = 0;
+        if (demo == 0){
+            x = (float) (528.47266);
+            y = (float) (375.3125);
+            demo++;
+        }
+        else if (demo == 1){
+           x = (float) (835.74927);
+           y = (float) (375.3125);
+            demo++;
+        }
+        else if (demo == 2) {
+            x = (float) (498.44702);
+            y = (float) (700.4492);
+            demo++;
+        }
+        else if (demo == 3) {
+            x = (float) (835.44702);
+            y = (float) (724.4492);
+            demo++;
+        }
+        canvas.drawCircle(x, y, 10, paint);
+    }
+
+    // List below End code
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_labeling);
+        choice = new ArrayList<>();
+        chkNetworkConnected(this);
 
         baseBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.labeltong);
 
         headerText = (TextView) findViewById(R.id.labelImgTitle);
         questionText = (TextView) findViewById(R.id.labelImgQuestion);
-        imgView = (ImageView) findViewById(R.id.labelImg);
-
+        imgView = (TouchImageView) findViewById(R.id.labelImg);
         imgView.setOnTouchListener(this);
-
         radioGroup = (RadioGroup) findViewById(R.id.labelImgRadio);
         radioGroup.setOrientation(RadioGroup.HORIZONTAL);
+        submitBtn = (Button) findViewById(R.id.labelImgSubmit);
+        submitBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (method_state != METHOD_SENTIMENT)
+                    requestNewImg();
+                else
+                    requestNewSong();
+            }
+        });
         setLabelSettings();
+        // Initial Request
+        if (method_state == METHOD_SENTIMENT)
+            requestNewSong();
+        else
+            requestNewImg();
+
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        ImageView view = (ImageView) v;
-        view.setScaleType(ImageView.ScaleType.MATRIX);
-        float scale;
+    //Get imageFile From Server
+    private void requestNewImg(){
+        if (!network_state){
+            final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setTitle("Network Error");
+            alertDialogBuilder.setMessage("Internet Connection Lost!")
+                    .setCancelable(true)
+                    .setPositiveButton("Go back",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    network_state = false;
+                                    dialog.cancel();
+                                }
+                            });
+            alertDialogBuilder.create();
+            alertDialogBuilder.show();
+            return;
+        }
 
-        dumpEvent(event);
-        // Handle touch events here...
-        // ToDo : Test getRawW,Y Functions Working Properly
-        switch (event.getAction() & MotionEvent.ACTION_MASK)
-        {
-            case MotionEvent.ACTION_DOWN:   // first finger down only
-                savedMatrix.set(matrix);
-                start.set(event.getRawX(), event.getRawY());
-                Log.d(TAG, "mode=DRAG"); // write to LogCat
-                mode = DRAG;
-                break;
 
-            case MotionEvent.ACTION_UP: // first finger lifted
-                if (method_state != METHOD_BOUNDING) break;
-                if (boxCount == 5) {
-                    imgView.setImageBitmap(drawCircle(boxArea));
-                }
-                else if (boxCount == 0) {
-                    boxCount++;
-                }
-                else if ((event.getRawX() - start.x) == 0 && (event.getRawY() - start.y) == 0) {
-                    boxArea[boxCount - 1][0] = (int) start.x;
-                    boxArea[boxCount - 1][1] = (int) start.y;
-                    Log.d(TAG, boxCount + " : X/Y -> " + start.x + "/" + start.y);
-                    boxCount++;
-                }
-                break;
-            case MotionEvent.ACTION_POINTER_UP: // second finger lifted
-                mode = NONE;
-                Log.d(TAG, "mode=NONE");
-                break;
+        choice = new ArrayList<>();
+        points = new ArrayList<>();
+        progressOn(this);
 
-            case MotionEvent.ACTION_POINTER_DOWN: // first and second finger down
-                oldDist = spacing(event);
-                Log.d(TAG, "oldDist=" + oldDist);
-                if (oldDist > 5f) {
-                    savedMatrix.set(matrix);
-                    midPoint(mid, event);
-                    mode = ZOOM;
-                    Log.d(TAG, "mode=ZOOM");
-                }
-                break;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    URL imageRes;
+                    if (method_state == METHOD_BOUNDING)
+                        imageRes = new URL("http://54.180.195.179:19432/dataset/list/db_test2/get");
+                    else
+                        imageRes = new URL("http://54.180.195.179:19432/dataset/list/db_test/get");
 
-            case MotionEvent.ACTION_MOVE:
-
-                if (mode == DRAG) {
-                    matrix.set(savedMatrix);
-                    matrix.postTranslate(event.getRawX() - start.x,
-                            event.getRawY() - start.y); // create the transformation in the matrix  of points
-                }
-                else if (mode == ZOOM) {
-                    // pinch zooming
-                    float newDist = spacing(event);
-                    Log.d(TAG, "newDist=" + newDist);
-                    if (newDist > 5f)
-                    {
-                        matrix.set(savedMatrix);
-                        scale = newDist / oldDist; // setting the scaling of the
-                        // matrix...if scale > 1 means
-                        // zoom in...if scale < 1 means
-                        // zoom out
-                        matrix.postScale(scale, scale, mid.x, mid.y);
+                    HttpURLConnection myConnection =
+                            (HttpURLConnection) imageRes.openConnection();
+                    if (myConnection.getResponseCode() == 200) {
+                        Log.d("SERVER", "SUCCESS");
+                        InputStream responseBody = myConnection.getInputStream();
+                        InputStreamReader responseBodyReader =
+                                new InputStreamReader(responseBody, "UTF-8");
+                        JsonReader jsonReader = new JsonReader(responseBodyReader);
+                        jsonReader.beginObject(); // Start processing the JSON object
+                        while (jsonReader.hasNext()) { // Loop through all keys
+                            String key = jsonReader.nextName(); // Fetch the next key
+                            if (key.equals("base_64_data"))  // Check if desired key
+                                imgBase64 = jsonReader.nextString();
+                            else if (key.equals("Dataq")) {
+                                jsonReader.beginArray();
+                                while(jsonReader.hasNext()) {
+                                    String tmp = jsonReader.nextString();
+                                    choice.add(tmp);
+                                }
+                                jsonReader.endArray();
+                                break;
+                            }
+                            else
+                                jsonReader.skipValue(); // Skip values of other keys
+                        }
+                        jsonReader.endObject();
                     }
+                    else
+                        Log.d("SERVER", "CONNECTION FAIL CODE " + myConnection.getResponseCode());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                break;
+            }
+        });
+        t.start();
+        try {
+            t.join();
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
         }
 
-        view.setImageMatrix(matrix); // display the transformation on screen
-        return true; // indicate event was handled
+        progressOFF();
+        byte[] decodedString = Base64.decode(imgBase64, Base64.DEFAULT);
+        Bitmap decodeByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        Bitmap tmpBitmap = Bitmap.createBitmap(decodeByte.getWidth(), decodeByte.getHeight(), Bitmap.Config.RGB_565);
+        canvas = new Canvas(tmpBitmap);
+        canvas.drawBitmap(decodeByte, 0, 0, null);
+        imgView.setImageBitmap(tmpBitmap);
+        imgBase64 = null;
+        if (method_state == METHOD_CLASSIFY)
+            setQuestionText();
+
     }
+    //Loading Bar 생성
+    private void progressOn(Activity activity){
+        if (activity == null || activity.isFinishing())
+            return;
 
-    private Bitmap drawCircle(int position[][]) {
-        Bitmap bitmap = baseBitmap.copy(Bitmap.Config.ARGB_4444, true);
-        bitmap.setPixel(1335, 813, 0);
-        Canvas canvas = new Canvas(bitmap);
-        Paint paint = new Paint();
-        paint.setStyle(Paint.Style.FILL_AND_STROKE);
-        paint.setStrokeWidth(10);
-        // ToDo: By Id number, change color
-        int selectedRadioButtonId = radioGroup.getCheckedRadioButtonId();
-        if (selectedRadioButtonId == -1) {
-            Log.d("TEST", "NOTHING");
-        }
-        else{
-            RadioButton selectedRadioButton = (RadioButton) findViewById(selectedRadioButtonId);
-            String selectedRadioButtonText = selectedRadioButton.getText().toString().substring(2);
-            Log.d("radioButtonID", selectedRadioButtonText);
-        }
-        paint.setColor(Color.BLACK);
-        return bitmap;
+        Log.d("TEST", "Thread start");
+        progressDialog = new AppCompatDialog(activity);
+        progressDialog.setCancelable(false);
+        progressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        progressDialog.setContentView(R.layout.progress);
+        progressDialog.show();
     }
-
-    /*
-     * --------------------------------------------------------------------------
-     * Method: spacing Parameters: MotionEvent Returns: float Description:
-     * checks the spacing between the two fingers on touch
-     * ----------------------------------------------------
-     */
-
-    private float spacing(MotionEvent event)
-    {
-        float x = event.getX(0) - event.getX(1);
-        float y = event.getY(0) - event.getY(1);
-        return (float) Math.sqrt(x * x + y * y);
+    //Loading Bar 해제
+    public void progressOFF() {
+        Log.d("TEST", "Thread end");
+        if (progressDialog != null && progressDialog.isShowing())
+            progressDialog.dismiss();
     }
-
-    /*
-     * --------------------------------------------------------------------------
-     * Method: midPoint Parameters: PointF object, MotionEvent Returns: void
-     * Description: calculates the midpoint between the two fingers
-     * ------------------------------------------------------------
-     */
-
-    private void midPoint(PointF point, MotionEvent event)
-    {
-        float x = event.getX(0) + event.getX(1);
-        float y = event.getY(0) + event.getY(1);
-        point.set(x / 2, y / 2);
-    }
-
-    /** Show an event in the LogCat view, for debugging */
-    private void dumpEvent(MotionEvent event)
-    {
-        String names[] = { "DOWN", "UP", "MOVE", "CANCEL", "OUTSIDE","POINTER_DOWN", "POINTER_UP", "7?", "8?", "9?" };
-        StringBuilder sb = new StringBuilder();
-        int action = event.getAction();
-        int actionCode = action & MotionEvent.ACTION_MASK;
-        sb.append("event ACTION_").append(names[actionCode]);
-
-        if (actionCode == MotionEvent.ACTION_POINTER_DOWN || actionCode == MotionEvent.ACTION_POINTER_UP)
-        {
-            sb.append("(pid ").append(action >> MotionEvent.ACTION_POINTER_ID_SHIFT);
-            sb.append(")");
-        }
-
-        sb.append("[");
-        for (int i = 0; i < event.getPointerCount(); i++)
-        {
-            sb.append("#").append(i);
-            sb.append("(pid ").append(event.getPointerId(i));
-            sb.append(")=").append((int) event.getX(i));
-            sb.append(",").append((int) event.getY(i));
-            if (i + 1 < event.getPointerCount())
-                sb.append(";");
-        }
-
-        sb.append("]");
-        Log.d("Touch Events ---------", sb.toString());
-    }
-
-
+    // 초기 TextView 세팅용
     private void setLabelSettings(){
-        RadioButton radioButton;
+        RadioButton radioButton = new RadioButton(this);
+        radioButton.setText("Object");
+        radioButton.setChecked(true);
+        radioGroup.addView(radioButton);
+
         switch (getIntent().getIntExtra("INFO", INTENT_ERROR)){
             case METHOD_BOUNDING:
                 method_state = METHOD_BOUNDING;
-                boxArea = new int[4][2];
                 headerText.setText("Bounding BOX");
                 questionText.setText("PLEASE BOUND AREA ABOUT TEST");
-                radioButton = new RadioButton(this);
-                radioButton.setText("Object");
-                radioGroup.addView(radioButton);
                 break;
             case METHOD_CLASSIFY:
                 method_state = METHOD_CLASSIFY;
                 headerText.setText("Clssification");
                 questionText.setText("PLEASE CLASSIFY ABOUT TEST");
-                for (int i = 0; i < 4; i++) {
-                    radioButton = new RadioButton(this);
-                    radioButton.setText("ANS" + (i+1));
-                    radioGroup.addView(radioButton);
-                }
                 break;
             case METHOD_SENTIMENT:
                 method_state = METHOD_SENTIMENT;
                 headerText.setText("Sentiment");
+                questionText.setText("PLEASE LEASTEN TO SOUND AND SELECT RIGHT SENTIMENT");
                 break;
             case TOPIC_CAT:
                 headerText.setText("Cat");
@@ -274,5 +308,64 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
                 break;
         }
     }
+    // 질문지들 설정
+    private void setQuestionText(){
+        RadioButton radioButton;
+        radioGroup.removeAllViews();
+        for (String newTxt : choice) {
+            radioButton = new RadioButton(this);
+            radioButton.setText(newTxt);
+            radioGroup.addView(radioButton);
+        }
+    }
+    // 네트워크 연결 상태 체크
+    private static void chkNetworkConnected(final Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkRequest.Builder builder = new NetworkRequest.Builder();
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        alertDialogBuilder.setTitle("Network Error");
+        alertDialogBuilder.setMessage("Internet Connection Lost!")
+                .setCancelable(true)
+                .setPositiveButton("Go back",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                network_state = false;
+                                dialog.cancel();
+                            }
+                        });
+        manager.registerNetworkCallback(
+                builder.build(),
+                new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(Network network) {
+                        network_state = true;
+                    }
 
+                    @Override
+                    public void onLost(Network network) {
+                        alertDialogBuilder.create();
+                        alertDialogBuilder.show();
+                    }
+                }
+
+        );
+    }
+}
+
+//X, Y좌표를 모두 저장하기 위한 임시 class
+class Pos {
+    float x, y;
+    Pos(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
 }

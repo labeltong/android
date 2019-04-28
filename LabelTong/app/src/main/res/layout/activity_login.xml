@@ -78,6 +78,7 @@
             android:layout_column="0"
             android:text="@string/login" />
         <Button
+            android:id="@+id/createButton"
             android:layout_width="160dp"
             android:layout_column="1"
             android:layout_height="match_parent"

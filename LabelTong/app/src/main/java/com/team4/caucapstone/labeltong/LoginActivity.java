@@ -22,5 +22,12 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
             }
         });
+        Button createButton = (Button)findViewById(R.id.createButton);
+        createButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                // ToDo : Social Login Buttons
+            }
+        });
     }
 }
