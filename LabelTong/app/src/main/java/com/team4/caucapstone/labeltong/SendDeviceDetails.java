@@ -18,10 +18,13 @@ public class SendDeviceDetails extends AsyncTask<String, Void, String> {
             httpURLConnection = (HttpURLConnection) new URL(params[0]).openConnection();
             httpURLConnection.setRequestMethod("POST");
 
+            httpURLConnection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            httpURLConnection.setRequestProperty("Accept","application/json");
             httpURLConnection.setDoOutput(true);
+            httpURLConnection.setDoInput(true);
 
             DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
-            wr.writeBytes("PostData=" + params[1]);
+            wr.writeBytes(params[1]);
             wr.flush();
             wr.close();
 
@@ -48,6 +51,6 @@ public class SendDeviceDetails extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
-        Log.e("POSTTEST", result); // this is expecting a response code to be sent from your server upon receiving the POST data
+        Log.e("POSTTEST", result);
     }
 }

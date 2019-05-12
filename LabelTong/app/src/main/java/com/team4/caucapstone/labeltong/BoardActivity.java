@@ -12,6 +12,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
+import com.facebook.AccessToken;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
+import com.facebook.login.LoginManager;
+
 
 public class BoardActivity extends AppCompatActivity{
     FragmentManager manager = getSupportFragmentManager();
@@ -116,5 +122,23 @@ public class BoardActivity extends AppCompatActivity{
         }
         startActivity(intent);
     }
+    protected void onDestroy() {
+        disconnectFromFacebook();
+        super.onDestroy();
+    }
+    public void disconnectFromFacebook() {
+        if (AccessToken.getCurrentAccessToken() == null) {
+            return; // already logged out
+        }
 
+        new GraphRequest(AccessToken.getCurrentAccessToken(), "/me/permissions/", null, HttpMethod.DELETE, new GraphRequest
+                .Callback() {
+            @Override
+            public void onCompleted(GraphResponse graphResponse) {
+
+                LoginManager.getInstance().logOut();
+
+            }
+        }).executeAsync();
+    }
 }
