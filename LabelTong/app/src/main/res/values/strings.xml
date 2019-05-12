@@ -24,4 +24,8 @@
 
     <string name="label_img">Image Label</string>
     <string name="label_btn">Submit</string>
+
+    <string name="facebook_app_id">2615460995190508</string>
+    <string name="fb_login_protocol_scheme">fb2615460995190508</string>
+
 </resources>

@@ -28,6 +28,10 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    implementation 'com.github.MikeOrtiz:TouchImageView:1.4.0'
+    implementation ('com.github.MikeOrtiz:TouchImageView:1.4.0')
     implementation 'gun0912.ted:tedpermission:2.2.2'
+
+    implementation ('com.facebook.android:facebook-login:[4,5)') {
+        exclude group: 'com.android.suppot', module: 'appcompat-v7'
+    }
 }
