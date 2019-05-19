@@ -14,12 +14,14 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
@@ -40,6 +42,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static com.team4.caucapstone.labeltong.SendDeviceDetails.GET_METHOD;
+import static com.team4.caucapstone.labeltong.SendDeviceDetails.POST_METHOD;
+
 public class SignupActivity extends AppCompatActivity {
     static final int FACEBOOK = 1;
 
@@ -57,7 +62,7 @@ public class SignupActivity extends AppCompatActivity {
 
     GoogleSignInClient mGoogleSignInClient;
     CallbackManager callbackManager;
-    Activity currentActivity = this;
+    SendDeviceDetails sendDeviceDetails;
     String authToken;
     String authEmail;
     String name;
@@ -109,7 +114,7 @@ public class SignupActivity extends AppCompatActivity {
             @Override
             public void onSuccess(LoginResult loginResult) {
                 authToken = loginResult.getAccessToken().getToken();
-                Log.d("TEST-TOKEN", authToken);
+                requestMe(loginResult.getAccessToken());
             }
             @Override
             public void onCancel() {
@@ -120,7 +125,23 @@ public class SignupActivity extends AppCompatActivity {
                 Toast.makeText(SignupActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
-
+    }
+    public void requestMe(AccessToken token) {
+        GraphRequest graphRequest = GraphRequest.newMeRequest(token,
+                new GraphRequest.GraphJSONObjectCallback() {
+                    @Override
+                    public void onCompleted(JSONObject object, GraphResponse response) {
+                        try{
+                            authEmail = object.getString("email");
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "id,email");
+        graphRequest.setParameters(parameters);
+        graphRequest.executeAsync();
     }
     private void googleSetUp(){
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -145,30 +166,20 @@ public class SignupActivity extends AppCompatActivity {
             onSignupFailed();
             return;
         }
-
         signupButton.setEnabled(false);
+        postToServer();
+        while(true){
+            if (sendDeviceDetails.isConnFinish())
+                break;
+        }
+        if (sendDeviceDetails.isErrorHappen())
+            onSignupFailed();
+        else
+            onSignupSuccess();
 
-        final AppCompatDialog progressDialog= new AppCompatDialog(this);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-        progressDialog.setContentView(R.layout.progress);
-        progressDialog.show();
-
-
-        new android.os.Handler().postDelayed(
-                new Runnable() {
-                    public void run() {
-                        if (postToServer()) {
-                            onSignupSuccess();
-                        }
-                        else {
-                            onSignupFailed();
-                        }
-                        progressDialog.dismiss();
-                    }
-                }, 3000);
     }
-    private boolean postToServer() {
+
+    private void postToServer() {
         JSONObject postData = new JSONObject();
         try{
             postData.put("email", email);
@@ -176,24 +187,31 @@ public class SignupActivity extends AppCompatActivity {
             postData.put("name", name);
             postData.put("phone_num", phone);
             Log.d("TOKENTEST", postData.toString());
-            new SendDeviceDetails().execute(POST_URL, postData.toString());
+            sendDeviceDetails = new SendDeviceDetails();
+            sendDeviceDetails.execute(POST_URL, postData.toString(), POST_METHOD);
         } catch (JSONException e) {
             e.printStackTrace();
-            return false;
         }
-        return true;
     }
 
 
     public void onSignupSuccess() {
-        Log.d("ERRORTEST", "SUCCESS-HAPPEN");
         signupButton.setEnabled(true);
-        setResult(RESULT_OK, null);
+        Intent resultIntent = new Intent();
+        Bundle extras = new Bundle();
+        extras.putString("AuthEmail", authEmail);
+        extras.putString("AuthToken", authToken);
+        resultIntent.putExtras(extras);
+        setResult(RESULT_OK, resultIntent);
         finish();
     }
 
     public void onSignupFailed() {
-        Toast.makeText(getBaseContext(), "Sign up failed", Toast.LENGTH_LONG).show();
+        if (sendDeviceDetails.getResponseCode() == 400)
+            Toast.makeText(getBaseContext(), "Already User", Toast.LENGTH_LONG).show();
+        else
+            Toast.makeText(getBaseContext(), "Sign up failed", Toast.LENGTH_LONG).show();
+
         signupButton.setEnabled(true);
     }
 
@@ -261,5 +279,22 @@ public class SignupActivity extends AppCompatActivity {
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
             Log.w("GOOGLE", "signInResult:failed code=" + e.getStatusCode());
         }
+    }
+    @Override
+    protected void onDestroy() {
+        disconnectFromFacebook();
+        super.onDestroy();
+    }
+    public void disconnectFromFacebook() {
+        if (AccessToken.getCurrentAccessToken() == null) {
+            return; // already logged out
+        }
+        new GraphRequest(AccessToken.getCurrentAccessToken(), "/me/permissions/", null, HttpMethod.DELETE, new GraphRequest
+                .Callback() {
+            @Override
+            public void onCompleted(GraphResponse graphResponse) {
+                LoginManager.getInstance().logOut();
+            }
+        }).executeAsync();
     }
 }

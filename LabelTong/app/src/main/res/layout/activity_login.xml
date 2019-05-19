@@ -26,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp">
-            <EditText android:id="@+id/input_email"
+            <EditText android:id="@+id/input_email_signin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
@@ -35,7 +35,7 @@
 
         <!-- FB auth Button -->
         <com.facebook.login.widget.LoginButton
-            android:id="@+id/btn_fb_auth"
+            android:id="@+id/btn_fb_auth_login"
             android:layout_width="300dp"
             android:layout_height="60dp"
             android:layout_centerInParent="true"
@@ -46,7 +46,7 @@
             android:padding="12dp" />
 
         <com.google.android.gms.common.SignInButton
-            android:id="@+id/btn_gl_auth"
+            android:id="@+id/btn_gl_auth_login"
             android:layout_width="329dp"
             android:layout_height="60dp"
             android:layout_centerInParent="true"

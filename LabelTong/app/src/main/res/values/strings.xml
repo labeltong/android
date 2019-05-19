@@ -29,6 +29,6 @@
     <string name="fb_login_protocol_scheme">fb2615460995190508</string>
 
     <string name="server_client_id">1058776675276-enl995cm0ifcquegg0jcic5n3r14eb2j.apps.googleusercontent.com</string>
-
+    <string name="server_url">http://54.180.195.179:13230</string>
 
 </resources>

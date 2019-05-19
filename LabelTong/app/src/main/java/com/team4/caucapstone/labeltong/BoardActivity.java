@@ -8,6 +8,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
@@ -45,6 +46,8 @@ public class BoardActivity extends AppCompatActivity{
     public final static int TOPIC_ROADSIGN = 6;
     public final static int TOPIC_EMOTION = 7;
 
+    private String JWTToken;
+
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -74,6 +77,8 @@ public class BoardActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_board);
+        JWTToken = getIntent().getStringExtra("JWT");
+        Log.d("JWT", JWTToken);
 
         transaction = manager.beginTransaction();
         //transaction.add(R.id.frameLayout, settingFragment).hide(settingFragment);
@@ -122,6 +127,7 @@ public class BoardActivity extends AppCompatActivity{
         }
         startActivity(intent);
     }
+    @Override
     protected void onDestroy() {
         disconnectFromFacebook();
         super.onDestroy();
@@ -135,9 +141,7 @@ public class BoardActivity extends AppCompatActivity{
                 .Callback() {
             @Override
             public void onCompleted(GraphResponse graphResponse) {
-
                 LoginManager.getInstance().logOut();
-
             }
         }).executeAsync();
     }
