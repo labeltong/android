@@ -40,23 +40,10 @@ public class SendDeviceDetails extends AsyncTask<String, Void, String> {
                 wr.flush();
                 wr.close();
 
-                InputStream in = httpURLConnection.getInputStream();
-                InputStreamReader inputStreamReader = new InputStreamReader(in);
-                int inputStreamData = inputStreamReader.read();
-                while (inputStreamData != -1) {
-                    char current = (char) inputStreamData;
-                    inputStreamData = inputStreamReader.read();
-                    data += current;
-                }
                 responseCode = httpURLConnection.getResponseCode();
-            }
-            else {
-                httpURLConnection.setRequestMethod("GET");
-                httpURLConnection.setUseCaches(true);
-                httpURLConnection.setDefaultUseCaches(false);
-                String strCookie = httpURLConnection.getHeaderField("Set-Cookie");
-                InputStream in = httpURLConnection.getInputStream();
+                httpURLConnection.connect();
 
+                InputStream in = httpURLConnection.getInputStream();
                 StringBuilder builder = new StringBuilder();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(in,"UTF-8"));
                 String line;
@@ -64,14 +51,25 @@ public class SendDeviceDetails extends AsyncTask<String, Void, String> {
                     builder.append(line+ "\n");
                 }
                 data = builder.toString();
+
+            }
+            else {
+                httpURLConnection.setRequestMethod("GET");
                 responseCode = httpURLConnection.getResponseCode();
+
+                InputStream in = httpURLConnection.getInputStream();
+                StringBuilder builder = new StringBuilder();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in,"UTF-8"));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line+ "\n");
+                }
+                data = builder.toString();
             }
         } catch (Exception e) {
-
             isErrorHappen = true;
             if (params[2].equals(GET_METHOD)) {
                 try{
-                    responseCode = httpURLConnection.getResponseCode();
                     InputStream in = httpURLConnection.getErrorStream();
                     StringBuilder builder = new StringBuilder();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in,"UTF-8"));
@@ -84,6 +82,7 @@ public class SendDeviceDetails extends AsyncTask<String, Void, String> {
                     error.printStackTrace();
                 }
             }
+            Log.d("ERROR-SERVER", data);
             e.printStackTrace();
         } finally {
             if (httpURLConnection != null) {

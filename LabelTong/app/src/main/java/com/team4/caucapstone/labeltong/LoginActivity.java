@@ -1,10 +1,14 @@
 package com.team4.caucapstone.labeltong;
 
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatDialog;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -32,6 +36,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.security.MessageDigest;
+
 import static com.team4.caucapstone.labeltong.SendDeviceDetails.GET_METHOD;
 import static com.team4.caucapstone.labeltong.SendDeviceDetails.POST_METHOD;
 
@@ -45,18 +51,12 @@ public class LoginActivity extends AppCompatActivity {
 
     String authToken;
     String authEmail;
+    String authName;
+    String authId;
     String JWTToken;
 
     CallbackManager callbackManager;
     SendDeviceDetails sendDeviceDetails;
-
-    @Override
-    protected void onStart(){
-        super.onStart();
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-        if (account != null)
-            Log.d("TEST", account.toString());
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,7 +136,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private boolean getJWT(){
-        String GET_URL = "http://54.180.195.179:13230/auth";
+        String GET_URL = "http://54.180.195.179:13230/auth2";
         String Params = "?email=" + authEmail + "&token=" + authToken;
         sendDeviceDetails = new SendDeviceDetails();
         sendDeviceDetails.execute(GET_URL + Params, Params, GET_METHOD);
@@ -167,6 +167,8 @@ public class LoginActivity extends AppCompatActivity {
                 Bundle extras = data.getExtras();
                 authEmail = extras.getString("AuthEmail");
                 authToken = extras.getString("AuthToken");
+                authName = extras.getString("AuthName");
+                authId = extras.getString("AuthId");
                 if (getJWT())
                     startNextActivity();
             }
@@ -180,6 +182,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void onCompleted(JSONObject object, GraphResponse response) {
                         try{
                             authEmail = object.getString("email");
+                            authName = object.getString("id");
                         }catch (Exception e){
                             e.printStackTrace();
                         }
@@ -196,8 +199,14 @@ public class LoginActivity extends AppCompatActivity {
         super.onDestroy();
     }
     private void startNextActivity(){
-        Intent intent = new Intent(LoginActivity.this, BoardActivity.class);
-        intent.putExtra("JWT", JWTToken);
+        Intent intent = new Intent(LoginActivity.this, UserInfoActivity.class);
+        Bundle extras = new Bundle();
+        extras.putString("AuthEmail", authEmail);
+        extras.putString("AuthToken", authToken);
+        extras.putString("AuthName", authName);
+        extras.putString("AuthId", authId);
+        extras.putString("JWT", JWTToken);
+        intent.putExtras(extras);
         startActivity(intent);
         finish();
     }
