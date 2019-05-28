@@ -1,14 +1,8 @@
 package com.team4.caucapstone.labeltong;
 
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
-import android.graphics.drawable.ColorDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatDialog;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -28,6 +22,7 @@ import com.facebook.HttpMethod;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -38,11 +33,16 @@ import org.json.JSONObject;
 
 import java.security.MessageDigest;
 
-import static com.team4.caucapstone.labeltong.SendDeviceDetails.GET_METHOD;
-import static com.team4.caucapstone.labeltong.SendDeviceDetails.POST_METHOD;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LoginActivity extends AppCompatActivity {
     private static final int REQUEST_SIGNUP = 0;
+    static boolean ret;
 
     EditText emailText;
     Button loginButton;
@@ -56,7 +56,9 @@ public class LoginActivity extends AppCompatActivity {
     String JWTToken;
 
     CallbackManager callbackManager;
-    SendDeviceDetails sendDeviceDetails;
+
+    Retrofit retrofit;
+    ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,14 +67,19 @@ public class LoginActivity extends AppCompatActivity {
         emailText = (EditText) findViewById(R.id.input_email_signin);
         facebooksetting();
 
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl(ApiService.API_URL)
+                .addConverterFactory(GsonConverterFactory.create());
+        retrofit = builder.build();
+        apiService = retrofit.create(ApiService.class);
+
         loginButton = (Button)findViewById(R.id.btn_login);
         loginButton.setOnClickListener(new Button.OnClickListener(){
             @Override
             public void onClick(View view){
-                if (canLogin())
-                    startNextActivity();
-                else
-                    Toast.makeText(LoginActivity.this, "Login Fail", Toast.LENGTH_LONG).show();
+                authEmail = emailText.getText().toString();
+                authToken = "TEST";
+                tryLogin();
             }
         });
 
@@ -107,58 +114,28 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-    private boolean canLogin(){
-        if (!validate())
-            return false;
-        return getJWT();
+    private void tryLogin(){
+        if (OAuthServer.validate(null, emailText, null,
+                authToken, this))
+            getJWT();
     }
-    private boolean validate(){
-        boolean valid = true;
-        String email = emailText.getText().toString();
-
-        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailText.setError("enter a valid email address");
-            valid = false;
-        } else if (!email.equals(authEmail)) {
-            emailText.setError("enter a authorized email address");
-            valid = false;
-        } else {
-            emailText.setError(null);
-        }
-        if (authToken == null) {
-            Log.d("TOKKEN ERROR", "MISSING  TOKEN");
-            Toast.makeText(LoginActivity.this,
-                    "Please Authorize by Facebook or Google", Toast.LENGTH_LONG).show();
-            valid = false;
-        }
-
-        return valid;
-    }
-
-    private boolean getJWT(){
-        String GET_URL = "http://54.180.195.179:13230/auth2";
-        String Params = "?email=" + authEmail + "&token=" + authToken;
-        sendDeviceDetails = new SendDeviceDetails();
-        sendDeviceDetails.execute(GET_URL + Params, Params, GET_METHOD);
-        while(true){
-            if (sendDeviceDetails.isConnFinish())
-                break;
-        }
-        Log.d("SERVER TEST", String.valueOf(sendDeviceDetails.getResponseCode()));
-        if (sendDeviceDetails.isErrorHappen()){
-            if (sendDeviceDetails.getResponseCode() == 401) {
-                Toast.makeText(getBaseContext(), "Please Create Account First", Toast.LENGTH_LONG).show();
-                return false;
+    private void getJWT() {
+        Call<ResponseBody> comment = apiService.getComment(authEmail, authToken);
+        comment.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try {
+                    JWTToken = response.body().string();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                startNextActivity();
             }
-            else {
-                Toast.makeText(getBaseContext(), "Server Error Occurred", Toast.LENGTH_LONG).show();
-                return false;
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(LoginActivity.this, "Fail to Login",Toast.LENGTH_LONG).show();
             }
-        }
-
-        JWTToken = sendDeviceDetails.getResultData();
-        Log.d("JWT DEBUG", JWTToken);
-        return true;
+        });
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -169,8 +146,7 @@ public class LoginActivity extends AppCompatActivity {
                 authToken = extras.getString("AuthToken");
                 authName = extras.getString("AuthName");
                 authId = extras.getString("AuthId");
-                if (getJWT())
-                    startNextActivity();
+                getJWT();
             }
         }
         callbackManager.onActivityResult(requestCode, resultCode, data);
@@ -198,6 +174,7 @@ public class LoginActivity extends AppCompatActivity {
         disconnectFromFacebook();
         super.onDestroy();
     }
+
     private void startNextActivity(){
         Intent intent = new Intent(LoginActivity.this, UserInfoActivity.class);
         Bundle extras = new Bundle();
@@ -210,10 +187,10 @@ public class LoginActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
     public void disconnectFromFacebook() {
-        if (AccessToken.getCurrentAccessToken() == null) {
+        if (AccessToken.getCurrentAccessToken() == null)
             return; // already logged out
-        }
 
         new GraphRequest(AccessToken.getCurrentAccessToken(), "/me/permissions/",
                 null, HttpMethod.DELETE, new GraphRequest

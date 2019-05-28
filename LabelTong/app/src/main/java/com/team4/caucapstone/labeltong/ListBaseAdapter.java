@@ -10,6 +10,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 
 public class ListBaseAdapter extends BaseAdapter {
@@ -43,7 +45,6 @@ public class ListBaseAdapter extends BaseAdapter {
         ViewHolder viewHolder = null;
 
         if (convertView == null){
-
             LayoutInflater layoutInflater = (LayoutInflater)context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
             Typeface type = Typeface.createFromAsset(context.getAssets(), "fonts/Montserrat-Regular.ttf");
             viewHolder = new ViewHolder();
@@ -64,7 +65,7 @@ public class ListBaseAdapter extends BaseAdapter {
 
         listItem items = (listItem) getItem(position);
 
-        viewHolder.image.setImageResource(items.getImage());
+        viewHolder.image.setImageBitmap(items.getImage());
         viewHolder.title.setText(items.getTitle());
         viewHolder.desc.setText(items.getDesc());
 

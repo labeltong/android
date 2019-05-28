@@ -35,35 +35,49 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
-import static com.team4.caucapstone.labeltong.BoardActivity.*;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LabelingActivity extends AppCompatActivity implements View.OnTouchListener {
-    AppCompatDialog progressDialog;
+    // Related View
     TouchImageView imgView;
-    TextView headerText;
     TextView questionText;
     RadioGroup radioGroup;
     Bitmap baseBitmap;
     Button submitBtn;
     Canvas canvas;
     MediaPlayer mediaPlayer;
-    String imgBase64;
+
+    // Data from user info activity
+    String JWTToken;
+    String email;
+    boolean isMethod;
+    int type;
+    String desc;
+    String title;
+
+    // Data from server
+    String uniqueID;
+    String ImageURL;
+    String question;
 
     int demo = 0;
 
-    static int method_state = METHOD_BOUNDING;
+    //Retrofit
+    Retrofit retrofit;
+    ApiService apiService;
+
+    // Static Variables
+    int method_type;
     static boolean isPlaying = false;
     static boolean network_state = true;
 
-    ArrayList<String> choice;
     ArrayList<Pos> points;
-
-    //Get SoundFile From Server
-    private void requestNewSong(){
-        mediaPlayer = MediaPlayer.create(this, R.raw.sentimentsample);
-        imgView.setImageResource(R.drawable.play);
-        isPlaying = false;
-    }
+    String answer_data;
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -73,14 +87,14 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_UP:
-                switch (method_state){
-                    case METHOD_BOUNDING:
+                switch (type){
+                    case 1:
                         Pos pos = new Pos(event.getX(), event.getY());
                         points.add(pos);
                         drawCircle(pos);
                         imgView.invalidate();
                         break;
-                    case METHOD_SENTIMENT:
+                    case 2:
                         if (isPlaying){
                             imgView.setImageResource(R.drawable.play);
                             mediaPlayer.stop();
@@ -128,106 +142,73 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         canvas.drawCircle(x, y, 10, paint);
     }
 
-    // List below End code
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_labeling);
-        choice = new ArrayList<>();
+
+        // Default Settings
+        getExtrasFromBundle(getIntent().getExtras());
         chkNetworkConnected(this);
-
-        baseBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.labeltong);
-
-        headerText = (TextView) findViewById(R.id.labelImgTitle);
-        questionText = (TextView) findViewById(R.id.labelImgQuestion);
-        imgView = (TouchImageView) findViewById(R.id.labelImg);
-        imgView.setOnTouchListener(this);
-        radioGroup = (RadioGroup) findViewById(R.id.labelImgRadio);
-        radioGroup.setOrientation(RadioGroup.HORIZONTAL);
-        submitBtn = (Button) findViewById(R.id.labelImgSubmit);
-        submitBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (method_state != METHOD_SENTIMENT)
-                    requestNewImg();
-                else
-                    requestNewSong();
-            }
-        });
-        setLabelSettings();
-        // Initial Request
-        if (method_state == METHOD_SENTIMENT)
-            requestNewSong();
-        else
-            requestNewImg();
-
+        viewDefault();
+        getNextData();
     }
-
-    //Get imageFile From Server
-    private void requestNewImg(){
-        if (!network_state){
-            final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setTitle("Network Error");
-            alertDialogBuilder.setMessage("Internet Connection Lost!")
-                    .setCancelable(true)
-                    .setPositiveButton("Go back",
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    network_state = false;
-                                    dialog.cancel();
-                                }
-                            });
-            alertDialogBuilder.create();
-            alertDialogBuilder.show();
-            return;
+    // Get File From Server
+    private void getNextData(){
+        if (isMethod) {
+            Call<LabelData> comment = apiService.getImageByMethod("Bearer " +
+                            JWTToken, type);
+            comment.enqueue(new Callback<LabelData>() {
+                @Override
+                public void onResponse(Call<LabelData> call, Response<LabelData> response) {
+                    question = response.body().getQuestion();
+                    uniqueID = response.body().getID();
+                    ImageURL = response.body().getDataPath();
+                    if (method_type != 3)
+                        getBitmapFromURL();
+                    else
+                        getMediaFromURL();
+                }
+                @Override
+                public void onFailure(Call<LabelData> call, Throwable t) {
+                    Log.d("RETRO_MTDImg", "FAIL");
+                }
+            });
         }
-
-
-        choice = new ArrayList<>();
-        points = new ArrayList<>();
-        progressOn(this);
-
+        else {
+            Call<LabelData> comment = apiService.getImageByTag("Bearer " +
+                    JWTToken, type);
+            comment.enqueue(new Callback<LabelData>() {
+                @Override
+                public void onResponse(Call<LabelData> call, Response<LabelData> response) {
+                    question = response.body().getQuestion();
+                    uniqueID = response.body().getID();
+                    ImageURL = response.body().getDataPath();
+                    method_type = Integer.valueOf(response.body().getAnswerType());
+                    if (method_type != 3)
+                        getBitmapFromURL();
+                    else
+                        getMediaFromURL();
+                }
+                @Override
+                public void onFailure(Call<LabelData> call, Throwable t) {
+                    Log.d("RETRO_TagImg", "FAIL");
+                }
+            });
+        }
+        setQuestionText();
+    }
+    private void getBitmapFromURL() {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
-                    URL imageRes;
-                    if (method_state == METHOD_BOUNDING)
-                        imageRes = new URL("http://54.180.195.179:19432/dataset/list/db_test2/get");
-                    else
-                        imageRes = new URL("http://54.180.195.179:19432/dataset/list/db_test/get");
-
-                    HttpURLConnection myConnection =
-                            (HttpURLConnection) imageRes.openConnection();
-                    if (myConnection.getResponseCode() == 200) {
-                        Log.d("SERVER", "SUCCESS");
-                        InputStream responseBody = myConnection.getInputStream();
-                        InputStreamReader responseBodyReader =
-                                new InputStreamReader(responseBody, "UTF-8");
-                        JsonReader jsonReader = new JsonReader(responseBodyReader);
-                        jsonReader.beginObject(); // Start processing the JSON object
-                        while (jsonReader.hasNext()) { // Loop through all keys
-                            String key = jsonReader.nextName(); // Fetch the next key
-                            if (key.equals("base_64_data"))  // Check if desired key
-                                imgBase64 = jsonReader.nextString();
-                            else if (key.equals("Dataq")) {
-                                jsonReader.beginArray();
-                                while(jsonReader.hasNext()) {
-                                    String tmp = jsonReader.nextString();
-                                    choice.add(tmp);
-                                }
-                                jsonReader.endArray();
-                                break;
-                            }
-                            else
-                                jsonReader.skipValue(); // Skip values of other keys
-                        }
-                        jsonReader.endObject();
-                    }
-                    else
-                        Log.d("SERVER", "CONNECTION FAIL CODE " + myConnection.getResponseCode());
+                    URL url = new URL(ImageURL);
+                    HttpURLConnection myConnection = (HttpURLConnection) url.openConnection();
+                    myConnection.setDoInput(true);
+                    myConnection.connect();
+                    InputStream is = myConnection.getInputStream();
+                    baseBitmap = BitmapFactory.decodeStream(is);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -236,87 +217,94 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         t.start();
         try {
             t.join();
-        }
-        catch (InterruptedException e){
+        } catch (InterruptedException e){
             e.printStackTrace();
         }
-
-        progressOFF();
-        byte[] decodedString = Base64.decode(imgBase64, Base64.DEFAULT);
-        Bitmap decodeByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-        Bitmap tmpBitmap = Bitmap.createBitmap(decodeByte.getWidth(), decodeByte.getHeight(), Bitmap.Config.RGB_565);
-        canvas = new Canvas(tmpBitmap);
-        canvas.drawBitmap(decodeByte, 0, 0, null);
-        imgView.setImageBitmap(tmpBitmap);
-        imgBase64 = null;
-        if (method_state == METHOD_CLASSIFY)
-            setQuestionText();
+        imgView.setImageBitmap(baseBitmap);
+    }
+    private void getMediaFromURL() {
 
     }
-    //Loading Bar 생성
-    private void progressOn(Activity activity){
-        if (activity == null || activity.isFinishing())
-            return;
 
-        Log.d("TEST", "Thread start");
-        progressDialog = new AppCompatDialog(activity);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-        progressDialog.setContentView(R.layout.progress);
-        progressDialog.show();
-    }
-    //Loading Bar 해제
-    public void progressOFF() {
-        Log.d("TEST", "Thread end");
-        if (progressDialog != null && progressDialog.isShowing())
-            progressDialog.dismiss();
-    }
-    // 초기 TextView 세팅용
-    private void setLabelSettings(){
-        RadioButton radioButton = new RadioButton(this);
-        radioButton.setText("Object");
-        radioButton.setChecked(true);
-        radioGroup.addView(radioButton);
-
-        switch (getIntent().getIntExtra("INFO", INTENT_ERROR)){
-            case METHOD_BOUNDING:
-                method_state = METHOD_BOUNDING;
-                headerText.setText("Bounding BOX");
-                questionText.setText("PLEASE BOUND AREA ABOUT TEST");
-                break;
-            case METHOD_CLASSIFY:
-                method_state = METHOD_CLASSIFY;
-                headerText.setText("Clssification");
-                questionText.setText("PLEASE CLASSIFY ABOUT TEST");
-                break;
-            case METHOD_SENTIMENT:
-                method_state = METHOD_SENTIMENT;
-                headerText.setText("Sentiment");
-                questionText.setText("PLEASE LEASTEN TO SOUND AND SELECT RIGHT SENTIMENT");
-                break;
-            case TOPIC_CAT:
-                headerText.setText("Cat");
-                break;
-            case TOPIC_CAR:
-                headerText.setText("Car");
-                break;
-            case TOPIC_ROADSIGN:
-                headerText.setText("Road Sign");
-                break;
-            case TOPIC_EMOTION:
-                headerText.setText("Emotion");
-                break;
-        }
-    }
     // 질문지들 설정
     private void setQuestionText(){
         RadioButton radioButton;
         radioGroup.removeAllViews();
-        for (String newTxt : choice) {
+        if (method_type == 1){// If Question is not Bounding Box
+            if (!isMethod)
+                questionText.setText("Bound " + desc);
+            return;
+        }
+        if(isMethod)
+            questionText.setText("Classify " + desc);
+
+        for (int i = 0; i < question.split(",").length; i++) {
             radioButton = new RadioButton(this);
-            radioButton.setText(newTxt);
+            radioButton.setText(question.split(",")[i]);
             radioGroup.addView(radioButton);
         }
+    }
+
+    private void getExtrasFromBundle(Bundle extras){
+        JWTToken = extras.getString("JWTToken");
+        isMethod = extras.getBoolean("isMethod");
+        type = extras.getInt("tagId");
+        desc = extras.getString("desc");
+        email = extras.getString("email");
+        title = extras.getString("Title");
+        if (isMethod)
+            method_type = type;
+    }
+    // 초기 TextView 세팅용
+    private void viewDefault(){
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl(ApiService.API_URL)
+                .addConverterFactory(GsonConverterFactory.create());
+        retrofit = builder.build();
+        apiService = retrofit.create(ApiService.class);
+
+        baseBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.labeltong);
+
+        questionText = (TextView) findViewById(R.id.labelImgQuestion);
+        questionText.setText(desc);
+
+        imgView = (TouchImageView) findViewById(R.id.labelImg);
+        imgView.setOnTouchListener(this);
+
+        setTitle(title);
+
+        radioGroup = (RadioGroup) findViewById(R.id.labelImgRadio);
+        radioGroup.setOrientation(RadioGroup.HORIZONTAL);
+
+        submitBtn = (Button) findViewById(R.id.labelImgSubmit);
+        submitBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                postAnswer();
+                getNextData();
+            }
+        });
+    }
+    // Post Answer To Server
+    private void postAnswer(){
+        Call<ResponseBody> comment = apiService.postAnswer("Bearer " +
+                JWTToken, email, uniqueID, answer_data);
+        comment.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()){
+                    try{
+                        Log.d("RETRO_TagImg", response.body().string());
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.d("RETRO_PostAnswer", "FAIL");
+            }
+        });
     }
     // 네트워크 연결 상태 체크
     private static void chkNetworkConnected(final Context context) {

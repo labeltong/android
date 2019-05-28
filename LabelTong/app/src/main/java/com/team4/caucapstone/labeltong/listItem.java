@@ -1,22 +1,29 @@
 package com.team4.caucapstone.labeltong;
 
+import android.graphics.Bitmap;
+import android.net.Uri;
+
 public class listItem {
-    private int image;
+    private Bitmap image;
     private String title;
     private String desc;
+    private boolean isMethod; // If true, by method, If false, by topic
+    private int type;
 
-
-    public listItem(int image,String title, String desc) {
+    public listItem(Bitmap image, String title, String desc,
+                    boolean isMethod, int type) {
         this.title = title;
         this.image = image;
         this.desc = desc;
+        this.isMethod = isMethod;
+        this.type = type;
     }
 
-    public int getImage() {
+    public Bitmap getImage() {
         return image;
     }
 
-    public void setImage(int image) {
+    public void setImage(Bitmap image) {
         this.image = image;
     }
 
@@ -36,7 +43,19 @@ public class listItem {
         this.desc = desc;
     }
 
+    public void setType(int type) {
+        this.type = type;
+    }
 
+    public boolean isMethod() {
+        return isMethod;
+    }
 
+    public int getType() {
+        return type;
+    }
 
+    public void setMethod(boolean method) {
+        isMethod = method;
+    }
 }
