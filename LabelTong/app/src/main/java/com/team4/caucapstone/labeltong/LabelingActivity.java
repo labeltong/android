@@ -347,6 +347,12 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
             float min_X = Math.min(x, x_1);
             float max_Y = Math.max(y, y_1);
             float min_Y = Math.min(y, y_1);
+            if (max_X - min_X <= 15 || max_Y - min_Y <= 15) {
+                MyAlertDialog.showWarning(this, "Labeling",
+                        "Bounded Area is Too Small!\nPlease Try again");
+                Log.d("Answer", "False-Toobig");
+                return false;
+            }
             float area = (max_X - min_X) * (max_Y - min_Y);
             if (area * 3 > baseBitmap.getHeight() * baseBitmap.getWidth()) {
                 MyAlertDialog.showWarning(this, "Labeling",

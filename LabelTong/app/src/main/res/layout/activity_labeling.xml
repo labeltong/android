@@ -16,7 +16,7 @@
         android:adjustViewBounds="true"
         android:background="@drawable/border"
         android:scaleType="centerCrop"
-        android:src="@drawable/labeltong"
+        android:src="@drawable/labeltong_loading"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.454"
         app:layout_constraintStart_toStartOf="parent"
