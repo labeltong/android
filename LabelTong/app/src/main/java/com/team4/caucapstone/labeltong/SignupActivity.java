@@ -28,15 +28,26 @@ import com.facebook.HttpMethod;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -45,23 +56,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class SignupActivity extends AppCompatActivity {
-    Retrofit retrofit;
-    ApiService apiService;
-
-    //private static final String OAUTH_SCOPE = "https://www.googleapis.com/auth/webmasters";
-    private static final String OAUTH_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
-    private static final String CODE = "code";
-    static final String CLIENT_ID = "391963958726-r75h6aaa0ef8h5i4kop9vothtlarbcu0.apps.googleusercontent.com";
-    private static final String REDIRECT_URI = "com.team4.caucapstone.labeltong:/oauth2redirect";
-
-    //Authorization
-    static String AUTHORIZATION_CODE;
-    private static final String GRANT_TYPE = "authorization_code";
-
-    //Response
-    static String Authcode;
-
-    Button testButton;
     EditText nameText;
     EditText emailText;
     EditText phoneText;
@@ -71,51 +65,13 @@ public class SignupActivity extends AppCompatActivity {
 
     CallbackManager callbackManager;
 
-    static String authToken;
+    String authToken;
     String authEmail;
-    String authName;
     String authId;
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Uri data = getIntent().getData();
-        if (data != null && !TextUtils.isEmpty(data.getScheme())){
-            String code = data.getQueryParameter(CODE);
-            if (!TextUtils.isEmpty(code)) {
-                AUTHORIZATION_CODE = code;
-                // Using Retrofit builder getting Authorization code
-                Retrofit.Builder builder = new Retrofit.Builder()
-                        .baseUrl("https://www.googleapis.com/")
-                        .addConverterFactory(GsonConverterFactory.create());
-
-                Retrofit retrofit = builder.build();
-                OAuthServer.OAuthServerIntface oAuthServerIntface = retrofit.create(OAuthServer.OAuthServerIntface.class);
-                final Call<OAuthToken> accessTokenCall = oAuthServerIntface.getAccessToken(
-                        AUTHORIZATION_CODE,
-                        CLIENT_ID,
-                        REDIRECT_URI,
-                        GRANT_TYPE
-                );
-                accessTokenCall.enqueue(new Callback<OAuthToken>() {
-                    @Override
-                    public void onResponse(Call<OAuthToken> call, Response<OAuthToken> response) {
-                        authToken = response.body().getAccessToken();
-                        testButton.setText("Google Signed In!");
-                        fbAuthButton.setVisibility(View.GONE);
-                    }
-                    @Override
-                    public void onFailure(Call<OAuthToken> call, Throwable t) {
-                        Toast.makeText(SignupActivity.this, "GOOGLE TOKEN ERROR",Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-            else {
-                //a problem occurs, the user reject our granting request or something like that
-                Toast.makeText(this, "User reject our request",Toast.LENGTH_LONG).show();
-            }
-        }
-    }
+    GoogleSignInClient mGoogleSignInClient;
+    SignInButton googleButton;
+    static final int RC_GET_TOKEN = 9002;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,6 +79,7 @@ public class SignupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_signup);
 
         facebookSetUp();
+        googleSetUp();
 
         nameText = (EditText) findViewById(R.id.input_name);
         emailText = (EditText) findViewById(R.id.input_email);
@@ -143,22 +100,6 @@ public class SignupActivity extends AppCompatActivity {
                 finish();
             }
         });
-
-        testButton = (Button) findViewById(R.id.btn_test);
-        testButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse("https://accounts.google.com/o/oauth2/v2/auth" +
-                        "?client_id=" + CLIENT_ID + "&response_type=" + CODE +
-                        "&redirect_uri=" + REDIRECT_URI + "&scope=" + OAUTH_SCOPE));
-                if(intent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(intent);
-                }
-
-            }
-        });
-
     }
 
     private void facebookSetUp(){
@@ -189,7 +130,6 @@ public class SignupActivity extends AppCompatActivity {
                     public void onCompleted(JSONObject object, GraphResponse response) {
                         try{
                             authEmail = object.getString("email");
-                            authName = object.getString("name");
                             authId = object.getString("id");
                         }catch (Exception e){
                             e.printStackTrace();
@@ -197,31 +137,41 @@ public class SignupActivity extends AppCompatActivity {
                     }
                 });
         Bundle parameters = new Bundle();
-        parameters.putString("fields", "id, name, email");
+        parameters.putString("fields", "id, email");
         graphRequest.setParameters(parameters);
         graphRequest.executeAsync();
     }
+    private void googleSetUp(){
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestProfile()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        googleButton = findViewById(R.id.btn_gl_auth);
+        googleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, RC_GET_TOKEN);
+            }
+        });
+    }
 
     public void signup() {
-        if (!OAuthServer.validate(nameText, emailText, phoneText,
-                authToken, SignupActivity.this)) {
+        if (!ServerControl.validate(nameText, emailText, phoneText,
+                authToken, authEmail ,SignupActivity.this)) {
             onSignupFailed();
             return;
         }
-        if (authId == null) {
-            authId = "Google";
-        }
+        authId = emailText.getText().toString();
         signupButton.setEnabled(false);
 
         postToServer();
     }
 
     private void postToServer() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl(ApiService.API_URL)
-                .addConverterFactory(GsonConverterFactory.create());
-        retrofit = builder.build();
-        apiService = retrofit.create(ApiService.class);
+        authEmail = emailText.getText().toString();
+        ServerControl.APIServiceIntface apiService = ServerControl.getAPIServerIntface();
         try{
             Call<SignUpModel> comment = apiService.postSignUP(emailText.getText().toString(),
                     authToken, nameText.getText().toString(), phoneText.getText().toString());
@@ -246,8 +196,6 @@ public class SignupActivity extends AppCompatActivity {
         Bundle extras = new Bundle();
         extras.putString("AuthEmail", authEmail);
         extras.putString("AuthToken", authToken);
-        extras.putString("AuthName", authName);
-        extras.putString("AuthId", authId);
         resultIntent.putExtras(extras);
         setResult(RESULT_OK, resultIntent);
         finish();
@@ -259,15 +207,34 @@ public class SignupActivity extends AppCompatActivity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        callbackManager.onActivityResult(requestCode, resultCode, data);
+        // Result returned from launching the Intent from GoogleSignInClient.getSignInIntent(...);
+        if (requestCode == RC_GET_TOKEN) {
+            // The Task returned from this call is always completed, no need to attach
+            // a listener.
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+        }
+        else
+            callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+    private void handleSignInResult(@NonNull Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            authEmail = account.getEmail();
+            authToken = account.getId();
+            fbAuthButton.setVisibility(View.GONE);
+            googleButton.setEnabled(false);
+        } catch (ApiException e) {
+            Log.w("TESTGOOGLE", "signInResult:failed code=" + e.getStatusCode());
+        }
     }
 
     @Override
     protected void onDestroy() {
         disconnectFromFacebook();
+        disconnectFromGoogle();
         super.onDestroy();
     }
-
     public void disconnectFromFacebook() {
         if (AccessToken.getCurrentAccessToken() == null) {
             return; // already logged out
@@ -280,5 +247,8 @@ public class SignupActivity extends AppCompatActivity {
                 LoginManager.getInstance().logOut();
             }
         }).executeAsync();
+    }
+    public void disconnectFromGoogle() {
+        mGoogleSignInClient.revokeAccess();
     }
 }

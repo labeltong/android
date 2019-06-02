@@ -25,6 +25,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.facebook.login.widget.ProfilePictureView;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import org.w3c.dom.Text;
 
@@ -59,22 +61,28 @@ public class UserInfoActivity extends AppCompatActivity {
 
     List<TagList> tagLists;
     private Bitmap[] Image;
-    private String[] Title ={"Boundingbox", "Classification","Sentiment"};
-    private String[] Desc = {"Bound box of Image", "Classify Image","Sentiment classify with Sounds"};
+    private String[] Title ={"Boundingbox", "Classification","Audio"};
+    private String[] Desc = {"Bound box of Image", "Classify Image","Classification with Audio"};
 
     Typeface font1 , font2;
-
-    Retrofit retrofit;
-    ApiService apiService;
-
+    ServerControl.APIServiceIntface apiService;
+    @Override
+    protected void onResume(){
+        super.onResume();
+        getUserInfo();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
 
+        Progressbar.progressON(UserInfoActivity.this);
+
         extras = getIntent().getExtras();
         JWTToken = extras.getString("JWT");
-        userId = extras.getString("AuthId");
+        userId = extras.getString("AuthEmail");
+
+        apiService = ServerControl.getAPIServerIntface();
 
         basicSettings();
         setListView();
@@ -85,13 +93,10 @@ public class UserInfoActivity extends AppCompatActivity {
                 startNextActivity((listItem) parent.getItemAtPosition(position));
             }
         });
+        setGoogleUserImg();
+        Progressbar.progressOFF();
     }
     public void basicSettings() {
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl(ApiService.API_URL)
-                .addConverterFactory(GsonConverterFactory.create());
-        retrofit = builder.build();
-        apiService = retrofit.create(ApiService.class);
         Image = new Bitmap[3];
         Image[0] = ((BitmapDrawable)getResources().getDrawable(R.drawable.boundingbox)).getBitmap();
         Image[1] = ((BitmapDrawable)getResources().getDrawable(R.drawable.classification)).getBitmap();
@@ -99,6 +104,7 @@ public class UserInfoActivity extends AppCompatActivity {
         getUserInfo();
     }
     public void getUserInfo() {
+        Progressbar.progressON(UserInfoActivity.this, "Login");
         Call<UserData> comment = apiService.getUserInfo("Bearer " + JWTToken);
         comment.enqueue(new Callback<UserData>() {
             @Override
@@ -108,12 +114,12 @@ public class UserInfoActivity extends AppCompatActivity {
                     warningsText.setText(response.body().getBanPoint());
                     userEmail.setText(response.body().getEmail());
                     userName.setText(response.body().getName());
+                    Progressbar.progressOFF();
                     //setUserImg();
                 } catch (Exception e) {
                     e.printStackTrace();
                     Log.d("ERROR", response.toString());
                 }
-
             }
             @Override
             public void onFailure(Call<UserData> call, Throwable t) {
@@ -147,26 +153,23 @@ public class UserInfoActivity extends AppCompatActivity {
         // Get items from source code
         items = new ArrayList<listItem>();
         for (int i= 0; i< Title.length; i++) {
-            listItem newItem = new listItem(Image[i], Title[i], Desc[i], true, i + 1);
-            items.add(newItem);
+            items.add(new listItem(Image[i], Title[i], Desc[i], true, i + 1));
         }
-        ListBaseAdapter listBaseAdapter = new ListBaseAdapter(UserInfoActivity.this, items);
-        listView.setAdapter(listBaseAdapter);
         // Get tags from server
         getTagListFromServer();
     }
     private void getTagListFromServer() {
+        Progressbar.progressON(UserInfoActivity.this, "Get Tag list..");
         Call<List<TagList>> comment = apiService.getTagList(JWTToken);
         comment.enqueue(new Callback<List<TagList>>() {
             @Override
             public void onResponse(Call<List<TagList>> call, Response<List<TagList>> response) {
                 try {
                     tagLists = response.body();
-                    for (TagList item : tagLists) {
-                        getBitmapFromURL(item);
-                    }
+                    getBitmapFromURL();
                     ListBaseAdapter listBaseAdapter = new ListBaseAdapter(UserInfoActivity.this, items);
                     listView.setAdapter(listBaseAdapter);
+                    Progressbar.progressOFF();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -177,40 +180,60 @@ public class UserInfoActivity extends AppCompatActivity {
             }
         });
     }
-    public void getBitmapFromURL(TagList item) {
-        imgUrl = item.getTagThumbnail();
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    URL url = new URL(imgUrl);
-                    HttpURLConnection myConnection = (HttpURLConnection) url.openConnection();
-                    myConnection.setDoInput(true);
-                    myConnection.connect();
-                    InputStream is = myConnection.getInputStream();
-                    bitmap = BitmapFactory.decodeStream(is);
-                } catch (Exception e) {
-                    e.printStackTrace();
+    public void getBitmapFromURL() {
+        for (int i = 0; i < tagLists.size(); i++) {
+            TagList item = tagLists.get(i);
+            imgUrl = item.getTagThumbnail();
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        URL url = new URL(imgUrl);
+                        HttpURLConnection myConnection = (HttpURLConnection) url.openConnection();
+                        myConnection.setDoInput(true);
+                        myConnection.connect();
+                        InputStream is = myConnection.getInputStream();
+                        bitmap = BitmapFactory.decodeStream(is);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e){
+                e.printStackTrace();
             }
-        });
-        t.start();
-        try {
-            t.join();
-        } catch (InterruptedException e){
-            e.printStackTrace();
+            items.add(new listItem(bitmap, item.getTagName(),
+                    item.getTagDescription(), false, Integer.parseInt(item.getTagId())));
         }
-        listItem newItem = new listItem(bitmap, item.getTagName(),
-                item.getTagDescription(), false, Integer.parseInt(item.getTagId()));
-        items.add(newItem);
     }
-    private void setUserImg() {
+    private void setFacebookUserImg() {
         userImg = (ImageView) findViewById(R.id.logo);
         String imgUrl = "https://graph.facebook.com/" + userId + "/picture";
         getImageFromServer(imgUrl, userImg);
         GradientDrawable drawable = (GradientDrawable) getApplicationContext().getDrawable(R.drawable.background_rounding);
         userImg.setBackground(drawable);
         userImg.setClipToOutline(true);
+    }
+    private void setGoogleUserImg() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if (account != null) {
+            Log.w("imgURIGOOGLE", "account catch");
+            Uri googleProfile = account.getPhotoUrl();
+            try{
+                Log.w("imgURIGOOGLE", googleProfile.toString());
+                userImg = (ImageView) findViewById(R.id.logo);
+                userImg.setImageURI(googleProfile);
+                GradientDrawable drawable = (GradientDrawable) getApplicationContext().getDrawable(R.drawable.background_rounding);
+                userImg.setBackground(drawable);
+                userImg.setClipToOutline(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
     }
     private void startNextActivity(listItem chosen){
         Intent intent = new Intent(UserInfoActivity.this, LabelingActivity.class);
@@ -225,7 +248,6 @@ public class UserInfoActivity extends AppCompatActivity {
         startActivity(intent);
     }
     private void getImageFromServer(final String imgUrl, ImageView v){
-
         Thread mThread = new Thread() {
             @Override
             public void run() {

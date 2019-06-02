@@ -8,14 +8,17 @@
 
     <com.ortiz.touchview.TouchImageView
         android:id="@+id/labelImg"
-        android:layout_width="match_parent"
-        android:layout_height="450dp"
+        android:layout_width="1000px"
+        android:layout_height="1000px"
         android:layout_marginStart="4dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="4dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/border"
+        android:scaleType="centerCrop"
         android:src="@drawable/labeltong"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.454"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

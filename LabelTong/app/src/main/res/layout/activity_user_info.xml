@@ -9,38 +9,40 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="190dp"
-        android:background="#008b8c"
-        android:orientation="vertical"
         android:layout_gravity="center"
-        >
+        android:background="#3F51B5"
+        android:orientation="vertical">
+
         <ImageView
             android:id="@+id/logo"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/defaultuser"
-            android:scaleType="centerCrop"
             android:layout_gravity="center"
             android:layout_marginTop="30dp"
-            />
+            android:scaleType="centerCrop"
+            android:background="@drawable/background_rounding"
+            android:src="@drawable/defaultuser" />
+
         <TextView
             android:id="@+id/user_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Default User"
+            android:layout_marginTop="10dp"
             android:gravity="center"
+            android:text="Default User"
             android:textColor="#fff"
-            android:textSize="22dp"
 
-            android:layout_marginTop="10dp"/>
+            android:textSize="22dp" />
+
         <TextView
             android:id="@+id/user_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Basic"
+            android:layout_marginTop="4dp"
             android:gravity="center"
+            android:text="Basic"
             android:textColor="#fff"
-            android:textSize="13dp"
-            android:layout_marginTop="4dp"/>
+            android:textSize="13dp" />
     </LinearLayout>
 
     <LinearLayout

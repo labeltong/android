@@ -7,15 +7,15 @@ public class OAuthToken {
     @SerializedName("access_token")
     @Expose
     private String accessToken;
+    @SerializedName("id_token")
+    @Expose
+    private String idToken;
     @SerializedName("expires_in")
     @Expose
-    private Long expiresIn;
+    private String expiresIn;
     @SerializedName("token_type")
     @Expose
     private String tokenType;
-    @SerializedName("refresh_token")
-    @Expose
-    private String refreshToken;
 
     public String getAccessToken() {
         return accessToken;
@@ -25,11 +25,19 @@ public class OAuthToken {
         this.accessToken = accessToken;
     }
 
-    public Long getExpiresIn() {
+    public String getIdToken() {
+        return idToken;
+    }
+
+    public void setIdToken(String idToken) {
+        this.idToken = idToken;
+    }
+
+    public String getExpiresIn() {
         return expiresIn;
     }
 
-    public void setExpiresIn(Long expiresIn) {
+    public void setExpiresIn(String expiresIn) {
         this.expiresIn = expiresIn;
     }
 
@@ -39,13 +47,5 @@ public class OAuthToken {
 
     public void setTokenType(String tokenType) {
         this.tokenType = tokenType;
-    }
-
-    public String getRefreshToken() {
-        return refreshToken;
-    }
-
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
     }
 }
