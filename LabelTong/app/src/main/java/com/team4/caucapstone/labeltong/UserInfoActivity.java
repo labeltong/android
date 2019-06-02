@@ -53,11 +53,13 @@ public class UserInfoActivity extends AppCompatActivity {
     ListView listView;
     ArrayList<listItem> items;
     Bitmap bitmap;
-    Bundle extras;
 
     String userId;
     String JWTToken;
+    String authName;
+    String authEmail;
     String imgUrl;
+    boolean isClicked = false;
 
     List<TagList> tagLists;
     private Bitmap[] Image;
@@ -70,38 +72,43 @@ public class UserInfoActivity extends AppCompatActivity {
     protected void onResume(){
         super.onResume();
         getUserInfo();
+        isClicked = false;
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
 
+        basicSettings(getIntent().getExtras());
+        viewSetting();
         Progressbar.progressON(UserInfoActivity.this);
 
-        extras = getIntent().getExtras();
-        JWTToken = extras.getString("JWT");
-        userId = extras.getString("AuthEmail");
-
-        apiService = ServerControl.getAPIServerIntface();
-
-        basicSettings();
+        getUserInfo();
         setListView();
-        viewSetting();
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                startNextActivity((listItem) parent.getItemAtPosition(position));
+                if (!isClicked) {
+                    isClicked = true;
+                    startNextActivity((listItem) parent.getItemAtPosition(position));
+                }
             }
         });
         setGoogleUserImg();
         Progressbar.progressOFF();
     }
-    public void basicSettings() {
+    public void basicSettings(Bundle extras) {
+        JWTToken = extras.getString("JWT");
+        userId = extras.getString("AuthEmail");
+        authName = extras.getString("AuthName");
+        authEmail = extras.getString("AuthEmail");
+
+        apiService = ServerControl.getAPIServerIntface();
+
         Image = new Bitmap[3];
         Image[0] = ((BitmapDrawable)getResources().getDrawable(R.drawable.boundingbox)).getBitmap();
         Image[1] = ((BitmapDrawable)getResources().getDrawable(R.drawable.classification)).getBitmap();
         Image[2] = ((BitmapDrawable)getResources().getDrawable(R.drawable.sentiment)).getBitmap();
-        getUserInfo();
     }
     public void getUserInfo() {
         Progressbar.progressON(UserInfoActivity.this, "Login");
@@ -141,11 +148,11 @@ public class UserInfoActivity extends AppCompatActivity {
         warnings.setTypeface(font2);
 
         userName = (TextView) findViewById(R.id.user_name);
-        userName.setText(extras.getString("AuthName"));
+        userName.setText(authName);
         userName.setTypeface(font1);
 
         userEmail = (TextView) findViewById(R.id.user_email);
-        userEmail.setText(extras.getString("AuthEmail"));
+        userEmail.setText(authEmail);
         userEmail.setTypeface(font2);
     }
     private void setListView() {
@@ -169,7 +176,6 @@ public class UserInfoActivity extends AppCompatActivity {
                     getBitmapFromURL();
                     ListBaseAdapter listBaseAdapter = new ListBaseAdapter(UserInfoActivity.this, items);
                     listView.setAdapter(listBaseAdapter);
-                    Progressbar.progressOFF();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

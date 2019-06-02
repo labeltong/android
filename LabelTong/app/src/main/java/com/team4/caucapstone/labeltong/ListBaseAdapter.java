@@ -19,7 +19,6 @@ public class ListBaseAdapter extends BaseAdapter {
     Context context;
     ArrayList<listItem> items;
 
-
     public ListBaseAdapter(Context context, ArrayList<listItem> items) {
         this.context = context;
         this.items = items;
@@ -61,7 +60,6 @@ public class ListBaseAdapter extends BaseAdapter {
         }else {
             viewHolder = (ViewHolder)convertView.getTag();
         }
-
 
         listItem items = (listItem) getItem(position);
 

@@ -128,6 +128,8 @@ public class LoginActivity extends AppCompatActivity {
     }
     private void getJWT() {
         ServerControl.APIServiceIntface apiService = ServerControl.getAPIServerIntface();
+        Log.d("getJWT", authEmail);
+        Log.d("getJWT", authToken);
         Call<ResponseBody> comment = apiService.getComment(authEmail, authToken);
         comment.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -138,13 +140,17 @@ public class LoginActivity extends AppCompatActivity {
                     startNextActivity();
                 } catch (Exception e) {
                     Progressbar.progressOFF();
-                    Toast.makeText(LoginActivity.this, "Fail to Login",Toast.LENGTH_LONG).show();
+                    MyAlertDialog.showWarning(LoginActivity.this, "Login",
+                            "Fail to Login");
+                    fbAuthButton.setVisibility(View.VISIBLE);
+                    googleButton.setEnabled(true);
                     e.printStackTrace();
                 }
             }
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(LoginActivity.this, "Fail to Login",Toast.LENGTH_LONG).show();
+                MyAlertDialog.showWarning(LoginActivity.this, "Login",
+                        "Fail to Login");
             }
         });
     }

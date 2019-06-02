@@ -24,22 +24,10 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public class ServerControl {
-    private static final String GOOGLE_URL = "https://www.googleapis.com/";
     private static final String API_URL = "http://54.180.195.179:13230/";
 
-    public static ServerControl.OAuthServerIntface oAuthServerIntface = null;
     public static ServerControl.APIServiceIntface apiServerIntface = null;
 
-    public static ServerControl.OAuthServerIntface getGoogleServerIntface(){
-        if(oAuthServerIntface == null) {
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(GOOGLE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
-            oAuthServerIntface = retrofit.create(ServerControl.OAuthServerIntface.class);
-        }
-        return oAuthServerIntface;
-    }
 
     public static ServerControl.APIServiceIntface getAPIServerIntface(){
         if(apiServerIntface == null) {
@@ -51,33 +39,12 @@ public class ServerControl {
         }
         return apiServerIntface;
     }
-    public interface OAuthServerIntface {
-        // @Headers("Accept: application/json")
-        /**
-         * The call to request a token
-         */
-        @POST("oauth2/v4/token")
-        @FormUrlEncoded
-        Call<OAuthToken> getAccessToken(
-                @Field("code") String code,
-                @Field("client_id") String client_id,
-                @Field("client_secret") String client_secret,
-                @Field("redirect_uri") String redirect_uri,
-                @Field("grant_type") String grant_type
-        );
-        @POST("oauth2/v4/token")
-        Call<ResponseBody> testAccessToken(@Body RequestBody body);
-    }
     public interface APIServiceIntface {
-        @FormUrlEncoded
         @POST("auth")
-        Call<SignUpModel>postSignUP(@Field("email") String email, @Field("token") String token,
-                                    @Field("name") String name, @Field("phone_num")String phone_num);
-        @FormUrlEncoded
+        Call<SignUpModel>postSignUP(@Body SignUpModel signUpModel);
+
         @POST("answer/answer")
-        Call<ResponseBody>postAnswer(@Header("Authorization") String jwtToken,
-                                     @Field("email") String email, @Field("data_id") int data_id,
-                                     @Field("answer_data") String answer_data);
+        Call<ResponseBody>postAnswer(@Header("Authorization") String jwtToken, @Body AnswerData answerData);
 
         @GET("info")
         Call<UserData>getUserInfo(@Header("Authorization") String jwtToken);

@@ -169,7 +169,6 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_labeling);
-        Progressbar.progressON(LabelingActivity.this);
         // Default Settings
         getExtrasFromBundle(getIntent().getExtras());
         mediaPlayer = new MediaPlayer();
@@ -186,9 +185,9 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         points = new ArrayList<>();
         Call<LabelData> comment;
         if (isMethod)
-            comment = apiService.getImageByMethod("Bearer " + JWTToken, tag_id);
+            comment = apiService.getImageByMethod(JWTToken, tag_id);
         else
-            comment = apiService.getImageByTag("Bearer " + JWTToken, tag_id);
+            comment = apiService.getImageByTag(JWTToken, tag_id);
         comment.enqueue(new Callback<LabelData>() {
             @Override
             public void onResponse(Call<LabelData> call, Response<LabelData> response) {
@@ -196,12 +195,12 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
                     question = response.body().getQuestion();
                     uniqueID = response.body().getID();
                     DataURL = response.body().getDataPath();
-                    Log.w("GetNextData", uniqueID);
-                    Log.w("GetNextData", DataURL);
+                    Log.w("GetNextData-uniqueid", uniqueID);
+                    Log.w("GetNextData-dataurl", DataURL);
                     method_type = Integer.valueOf(response.body().getAnswerType());
                 } catch (Exception e) {
                     e.printStackTrace();
-                    onSignupFailed();
+                    onDataRequestFailed();
                 }
                 if (method_type != 3)
                     getBitmapFromURL();
@@ -216,7 +215,8 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         });
     }
 
-    public void onSignupFailed() {
+    public void onDataRequestFailed() {
+        Progressbar.progressOFF();
         Toast.makeText(getBaseContext(), "You've Done all labeling work!", Toast.LENGTH_LONG).show();
     }
 
@@ -299,7 +299,7 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
     }
     // Bunlde에서 데이터 읽어오기
     private void getExtrasFromBundle(Bundle extras){
-        JWTToken = extras.getString("JWTToken");
+        JWTToken = "Bearer " + extras.getString("JWTToken");
         isMethod = extras.getBoolean("isMethod");
         tag_id = extras.getInt("tagId");
         desc = extras.getString("desc");
@@ -330,7 +330,6 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
             @Override
             public void onClick(View v) {
                 postAnswer();
-                getNextData();
             }
         });
     }
@@ -340,7 +339,6 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
         if (method_type == 1) { // Bounding Box
             if(points.size() != 2)
                 return false;
-            Paint paint = new Paint();
             float x = points.get(0).x;
             float y = points.get(0).y;
             float x_1 = points.get(1).x;
@@ -349,6 +347,13 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
             float min_X = Math.min(x, x_1);
             float max_Y = Math.max(y, y_1);
             float min_Y = Math.min(y, y_1);
+            float area = (max_X - min_X) * (max_Y - min_Y);
+            if (area * 3 > baseBitmap.getHeight() * baseBitmap.getWidth()) {
+                MyAlertDialog.showWarning(this, "Labeling",
+                        "Bounded Area is Too Big!\nPlease Try again");
+                Log.d("Answer", "False-Toobig");
+                return false;
+            }
             answer_data = min_X + "," + max_Y + "," + max_X + "," + min_Y;
         }
         else{
@@ -357,7 +362,8 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
                 answer_data = ((RadioButton)findViewById(checkedRadioButton)).getText().toString();
         }
         if (answer_data.equals("")) {
-            Toast.makeText(LabelingActivity.this, "Please Select Answer", Toast.LENGTH_LONG);
+            MyAlertDialog.showWarning(this, "Labeling",
+                    "Please make an Answer!");
             return false;
         }
         return true;
@@ -366,19 +372,23 @@ public class LabelingActivity extends AppCompatActivity implements View.OnTouchL
     private void postAnswer(){
         if (!getAnswer())
             return;
-        Call<ResponseBody> comment = apiService.postAnswer("Bearer " +
-                JWTToken, email, Integer.valueOf(uniqueID), answer_data);
+        int post_id = Integer.valueOf(uniqueID);
+        AnswerData answerData = new AnswerData();
+        answerData.setAnswer_data(answer_data);
+        answerData.setData_id(post_id);
+        answerData.setEmail(email);
+        Call<ResponseBody> comment = apiService.postAnswer(JWTToken, answerData);
         comment.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                Log.d("POSTANSWER", response.toString());
                 if (response.isSuccessful()){
                     try{
-                        Log.d("RETRO_TagImg", response.body().string());
+                        getNextData();
                     } catch (Exception e){
                         e.printStackTrace();
                     }
                 }
+
             }
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {

@@ -1,10 +1,6 @@
 package com.team4.caucapstone.labeltong;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Intent;
-import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -67,7 +63,6 @@ public class SignupActivity extends AppCompatActivity {
 
     String authToken;
     String authEmail;
-    String authId;
 
     GoogleSignInClient mGoogleSignInClient;
     SignInButton googleButton;
@@ -130,14 +125,13 @@ public class SignupActivity extends AppCompatActivity {
                     public void onCompleted(JSONObject object, GraphResponse response) {
                         try{
                             authEmail = object.getString("email");
-                            authId = object.getString("id");
                         }catch (Exception e){
                             e.printStackTrace();
                         }
                     }
                 });
         Bundle parameters = new Bundle();
-        parameters.putString("fields", "id, email");
+        parameters.putString("fields", "email");
         graphRequest.setParameters(parameters);
         graphRequest.executeAsync();
     }
@@ -163,9 +157,7 @@ public class SignupActivity extends AppCompatActivity {
             onSignupFailed();
             return;
         }
-        authId = emailText.getText().toString();
         signupButton.setEnabled(false);
-
         postToServer();
     }
 
@@ -173,12 +165,19 @@ public class SignupActivity extends AppCompatActivity {
         authEmail = emailText.getText().toString();
         ServerControl.APIServiceIntface apiService = ServerControl.getAPIServerIntface();
         try{
-            Call<SignUpModel> comment = apiService.postSignUP(emailText.getText().toString(),
-                    authToken, nameText.getText().toString(), phoneText.getText().toString());
+            SignUpModel signUpModel = new SignUpModel();
+            signUpModel.setEmail(authEmail);
+            signUpModel.setName(nameText.getText().toString());
+            signUpModel.setPhone_num(phoneText.getText().toString());
+            signUpModel.setToken(authToken);
+            Call<SignUpModel> comment = apiService.postSignUP(signUpModel);
             comment.enqueue(new Callback<SignUpModel>() {
                 @Override
                 public void onResponse(Call<SignUpModel> call, Response<SignUpModel> response) {
-                    onSignupSuccess();
+                    if (response.isSuccessful())
+                        onSignupSuccess();
+                    else
+                        onSignupFailed();
                 }
                 @Override
                 public void onFailure(Call<SignUpModel> call, Throwable t) {
@@ -202,7 +201,8 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     public void onSignupFailed() {
-        Toast.makeText(getBaseContext(), "Sign up failed", Toast.LENGTH_LONG).show();
+        MyAlertDialog.showWarning(SignupActivity.this, "Login",
+                "Fail to Login");
         signupButton.setEnabled(true);
     }
     @Override
